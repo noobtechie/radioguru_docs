@@ -1,0 +1,324 @@
+# Application Processor API Specification
+
+## Overview
+RESTful API for the Rust application running on the Linux SBC, providing configuration management, video control, and system monitoring.
+
+## Base Configuration
+
+```yaml
+openapi: 3.0.3
+info:
+  title: RC Controller Application API
+  version: 0.1.0
+  description: API for dual processor RC controller system
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local application server
+```
+
+## Endpoints
+
+### Radio Configuration
+
+#### GET /radio/models
+Get list of all configured aircraft models
+```yaml
+responses:
+  200:
+    description: List of aircraft models
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioModelSummary'
+```
+
+#### GET /radio/models/{model_id}
+Get detailed configuration for specific model
+```yaml
+parameters:
+  - name: model_id
+    in: path
+    required: true
+    schema:
+      type: integer
+responses:
+  200:
+    description: Model configuration details
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/RadioConfiguration'
+  404:
+    description: Model not found
+```
+
+#### PUT /radio/models/{model_id}
+Update radio configuration for model
+```yaml
+parameters:
+  - name: model_id
+    in: path
+    required: true
+    schema:
+      type: integer
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/RadioConfiguration'
+responses:
+  200:
+    description: Configuration updated successfully
+  400:
+    description: Invalid configuration data
+  404:
+    description: Model not found
+```
+
+#### POST /radio/models/{model_id}/activate
+Activate specific model configuration
+```yaml
+parameters:
+  - name: model_id
+    in: path
+    required: true
+    schema:
+      type: integer
+responses:
+  200:
+    description: Model activated successfully
+  404:
+    description: Model not found
+  409:
+    description: Model cannot be activated (validation failed)
+```
+
+### Video Management
+
+#### GET /video/sources
+List available video input sources
+```yaml
+responses:
+  200:
+    description: Available video sources
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoSource'
+```
+
+#### POST /video/stream/start
+Start video stream from specified source
+```yaml
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/VideoStreamConfig'
+responses:
+  200:
+    description: Video stream started
+  400:
+    description: Invalid stream configuration
+  409:
+    description: Another stream already active
+```
+
+#### POST /video/stream/stop
+Stop active video stream
+```yaml
+responses:
+  200:
+    description: Video stream stopped
+  404:
+    description: No active stream
+```
+
+#### GET /video/stream/status
+Get current video stream status and metrics
+```yaml
+responses:
+  200:
+    description: Stream status information
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/VideoStreamStatus'
+```
+
+### System Settings
+
+#### GET /system/settings
+Get current system configuration
+```yaml
+responses:
+  200:
+    description: System settings
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/SystemSettings'
+```
+
+#### PUT /system/settings
+Update system configuration
+```yaml
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/SystemSettings'
+responses:
+  200:
+    description: Settings updated successfully
+  400:
+    description: Invalid settings data
+```
+
+#### GET /system/status
+Get system health and diagnostics
+```yaml
+responses:
+  200:
+    description: System status information
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/SystemStatus'
+```
+
+### Network Configuration
+
+#### GET /network/wifi
+Get WiFi configuration and status
+```yaml
+responses:
+  200:
+    description: WiFi information
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/WiFiConfig'
+```
+
+#### PUT /network/wifi
+Update WiFi configuration
+```yaml
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/WiFiConfig'
+responses:
+  200:
+    description: WiFi configuration updated
+  400:
+    description: Invalid WiFi configuration
+```
+
+#### GET /network/bluetooth
+Get Bluetooth configuration and paired devices
+```yaml
+responses:
+  200:
+    description: Bluetooth information
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/BluetoothConfig'
+```
+
+## Data Schemas
+
+### RadioConfiguration
+```yaml
+RadioConfiguration:
+  type: object
+  required: [model_id, model_name, mixer_settings]
+  properties:
+    model_id:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    model_name:
+      type: string
+      maxLength: 64
+    mixer_settings:
+      $ref: '#/components/schemas/MixerConfig'
+    channel_map:
+      $ref: '#/components/schemas/ChannelMap'
+    failsafe_config:
+      $ref: '#/components/schemas/FailsafeConfig'
+    flight_modes:
+      type: array
+      items:
+        $ref: '#/components/schemas/FlightMode'
+```
+
+### VideoStreamConfig
+```yaml
+VideoStreamConfig:
+  type: object
+  required: [source_id, resolution, frame_rate]
+  properties:
+    source_id:
+      type: string
+    resolution:
+      $ref: '#/components/schemas/Resolution'
+    frame_rate:
+      type: integer
+      minimum: 1
+      maximum: 120
+    format:
+      type: string
+      enum: [h264, mjpeg, raw]
+```
+
+### SystemSettings
+```yaml
+SystemSettings:
+  type: object
+  properties:
+    display_settings:
+      $ref: '#/components/schemas/DisplayConfig'
+    audio_settings:
+      $ref: '#/components/schemas/AudioConfig'
+    calibration_data:
+      $ref: '#/components/schemas/CalibrationData'
+    user_preferences:
+      $ref: '#/components/schemas/UserPreferences'
+```
+
+## Error Responses
+
+### Standard Error Format
+```yaml
+ErrorResponse:
+  type: object
+  required: [error_code, message]
+  properties:
+    error_code:
+      type: string
+    message:
+      type: string
+    details:
+      type: object
+    timestamp:
+      type: string
+      format: date-time
+```
+
+### Common Error Codes
+- `INVALID_INPUT`: Request validation failed
+- `RESOURCE_NOT_FOUND`: Requested resource does not exist  
+- `CONFLICT`: Operation conflicts with current state
+- `HARDWARE_ERROR`: Hardware communication failure
+- `INTERNAL_ERROR`: Unexpected server error
