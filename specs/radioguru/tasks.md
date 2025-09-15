@@ -30,8 +30,8 @@ tests/
 ```
 
 ## Phase 3.1: MVP Hardware Setup
-- [ ] T001 Create MVP project structure for dual processor system
-- [ ] T002 Initialize STM32 Zephyr project for Nucleo F446RE board
+- [x] T001 Create MVP project structure for dual processor system
+- [x] T002 Initialize STM32 Zephyr project for Nucleo F446RE board
 - [ ] T003 Initialize Rust project for Radxa Zero 3W application processor  
 - [ ] T004 [P] Configure power management for IP2312 + LM2596 + 18650 setup
 - [ ] T005 [P] Configure STM32CubeProgrammer for Nucleo F446RE flashing
